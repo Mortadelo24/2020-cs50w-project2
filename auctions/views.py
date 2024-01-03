@@ -27,9 +27,6 @@ class CreateForm(forms.Form):
     )
     first_Bide = forms.IntegerField()
 
-class NewBidForm(forms.Form):
-    price = forms.IntegerField()                            
-    listing_id = forms.IntegerField(widget=forms.HiddenInput())
 
 
 def login_view(request):
@@ -140,33 +137,96 @@ def listing(request, listing_id):
     except Listing.DoesNotExist:
         return HttpResponseBadRequest("Bad Request: listing does not exist")
 
-    bid_form = NewBidForm()
-    bid_form.fields["listing_id"].initial = listing.id
-    
+
    
     return render(request, "auctions/listing.html",{
         "listing": listing,
-        "bid_form": bid_form
     })
 
 @login_required(login_url="/login")
-def newbid(request):
+def newbid(request, listing_id):
     if request.method == "POST":
-        form = NewBidForm(request.POST)
-        if form.is_valid():
-            data =  form.cleaned_data 
-            listing = Listing.objects.get(pk = data["listing_id"])
+        print("ddffff")
+
+        price = int(request.POST["price"])
+        if price:
+            try:
+                listing = Listing.objects.get(pk = listing_id)
+            except KeyError:
+                return HttpResponseBadRequest("Bad Request: no listing chosen")
+            except Listing.DoesNotExist:
+                return HttpResponseBadRequest("Bad Request: listing does not exist")
 
 
-            bid = Bid(user= request.user, listing= listing , price = data["price"] )
+
+            if price <= listing.bids.first().price:
+                return HttpResponseBadRequest("Bad Request: your bid has to be higer than the last one")
+            elif listing.close:
+                return HttpResponseBadRequest("Bad Request: This listing is closed")
+           
+            bid = Bid(user= request.user, listing= listing , price = price )
             bid.save()
 
-            return HttpResponseRedirect(reverse("listing",args=(data["listing_id"],)))
 
-    return HttpResponseNotAllowed(['POST'])
+            return HttpResponseRedirect(reverse("listing",args=(listing_id,)))
+
+    return HttpResponseRedirect(reverse("listing",args=(listing_id,)))
 
 @login_required(login_url="/login")
 def watchlist(request):
-    return render(request, "auctions/index.html", {
+    return render(request, "auctions/watchList.html", {
         "listings" : request.user.watchlist_listings.all
     })
+
+@login_required(login_url="/login")
+def add_to_watchlist(request, listing_id):
+    try:
+        listing = Listing.objects.get(pk = listing_id)
+    except KeyError:
+        return HttpResponseBadRequest("Bad Request: no listing chosen")
+    except Listing.DoesNotExist:
+        return HttpResponseBadRequest("Bad Request: listing does not exist")
+    
+    listing.watchlist_users.add(request.user)
+
+    listing.save()
+
+    return HttpResponseRedirect(reverse("listing",args=(listing_id,)))
+
+@login_required(login_url="/login")
+def remove_from_watchlist(request, listing_id):
+    try:
+        listing = Listing.objects.get(pk = listing_id)
+    except KeyError:
+        return HttpResponseBadRequest("Bad Request: no listing chosen")
+    except Listing.DoesNotExist:
+        return HttpResponseBadRequest("Bad Request: listing does not exist")
+    
+    listing.watchlist_users.remove(request.user)
+
+    listing.save()
+
+    return HttpResponseRedirect(reverse("listing",args=(listing_id,)))
+    
+
+
+@login_required(login_url="/login")
+def close(request, listing_id):
+    try:
+        listing = Listing.objects.get(pk = listing_id)
+    except KeyError:
+        return HttpResponseBadRequest("Bad Request: no listing chosen")
+    except Listing.DoesNotExist:
+        return HttpResponseBadRequest("Bad Request: listing does not exist")
+    
+    if not listing.user == request.user:
+        return HttpResponseBadRequest("Bad Request: you are not the owner of this listing, yo can not close it")
+
+
+    listing.close = True
+
+    listing.save()
+
+
+    return HttpResponseRedirect(reverse("listing",args=(listing_id,)))
+    

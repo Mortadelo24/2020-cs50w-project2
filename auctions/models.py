@@ -19,6 +19,7 @@ class Listing(models.Model):
     categories = models.ManyToManyField(Category, related_name="listings")
     created_date = models.DateTimeField(auto_now_add=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="listings")
+    close = models.BooleanField(default = False)
 
     watchlist_users = models.ManyToManyField(User, related_name="watchlist_listings")
 
@@ -37,6 +38,12 @@ class Bid(models.Model):
     
 
 
-class comments(models.Model):
-    pass   
+ 
+
+
+class comment(models.Model):
+    user = models.ForeignKey(User, related_name="comments", on_delete=models.CASCADE)
+    content = models.CharField(max_length = 500)   
+    listing = models.ForeignKey(Listing, related_name="comments", on_delete=models.CASCADE)
+    date = models.DateTimeField(auto_now_add=True)
 
