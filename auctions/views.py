@@ -8,7 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.validators import MinValueValidator
 
 
-from .models import User, Listing, Bid, Category
+from .models import User, Listing, Bid, Category, Comment
 
 
 class LoginForm(forms.Form):
@@ -66,9 +66,18 @@ def register(request):
         username = request.POST["username"]
         email = request.POST["email"]
 
-        # Ensure password matches confirmation
+       
         password = request.POST["password"]
         confirmation = request.POST["confirmation"]
+
+        if not (username and email and password and confirmation):
+            return render(request, "auctions/register.html", {
+                "message": "you have to complete the form"
+            })
+
+
+
+         # Ensure password matches confirmation
         if password != confirmation:
             return render(request, "auctions/register.html", {
                 "message": "Passwords must match."
@@ -128,6 +137,36 @@ def index(request):
     return render(request, "auctions/index.html", {
         "listings" : Listing.objects.all()
     })
+def categories(request, category_id = None):
+    
+    categories = Category.objects.all()
+
+    if category_id:
+        try:
+            category = Category.objects.get(pk = category_id)
+        except KeyError:
+            return HttpResponseBadRequest("Bad Request: no category chosen")
+        except Category.DoesNotExist:
+            return HttpResponseBadRequest("Bad Request: category does not exist")
+        
+        return render(request, "auctions/categories.html", {
+            "categories" : categories,
+            "category": category
+        })
+        
+
+        
+
+
+
+    return render(request, "auctions/categories.html", {
+        "categories" : categories,
+    })
+
+
+
+
+
 
 def listing(request, listing_id):
     try:
@@ -146,8 +185,6 @@ def listing(request, listing_id):
 @login_required(login_url="/login")
 def newbid(request, listing_id):
     if request.method == "POST":
-        print("ddffff")
-
         price = int(request.POST["price"])
         if price:
             try:
@@ -226,6 +263,30 @@ def close(request, listing_id):
     listing.close = True
 
     listing.save()
+
+
+    return HttpResponseRedirect(reverse("listing",args=(listing_id,)))
+    
+    
+
+
+@login_required(login_url="/login")
+def new_comment(request, listing_id):
+    if request.method == "POST":
+        comment = str(request.POST["comment"])
+        if comment and len(comment) > 2 :
+            try:
+                listing = Listing.objects.get(pk = listing_id)
+            except KeyError:
+                return HttpResponseBadRequest("Bad Request: no listing chosen")
+            except Listing.DoesNotExist:
+                return HttpResponseBadRequest("Bad Request: listing does not exist")
+            
+            comment = Comment(content=comment, listing= listing, user = request.user)
+
+            comment.save()
+
+   
 
 
     return HttpResponseRedirect(reverse("listing",args=(listing_id,)))

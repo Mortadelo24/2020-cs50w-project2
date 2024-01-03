@@ -1,9 +1,23 @@
 {% extends "auctions/layout.html" %}
 
 {% block body %}
-    <h2>Active Listings</h2>
+    <h2>Select a category</h2>
+   
+    <div class="d-flex">
+        {%  for  category  in categories %}
+        
+        <a href="{% url 'categories' category.id  %}"><button type="submit" class="btn btn-primary">{{category}}</button></a>
+        {% endfor %}
+    </div>
+
+   
+
+
+    {% if category %}
+
+    <h2>Listings with the category <span class="badge text-bg-primary">{{category}}</span> </h2>
     <div class="d-flex flex-row mb-3 flex-wrap gap-2 align-items-center justify-content-center">
-        {% for listing in listings  %}
+        {% for listing in category.listings.all  %}
         <div class="card" style="width: 18rem;">
             {% if listing.image_url %}
                 <img src="{{listing.image_url}}" class="img-fluid rounded-start card-img-top" alt="...">
@@ -14,19 +28,8 @@
               <h5 class="card-title">{{listing.title}}</h5>
               <p class="card-text">{{listing.description}}</p>
               <p class="card-text">Price: {{ listing.bids.first}}$</p>
-              <p class="card-text"><small class="text-body-secondary">{{ listing.created_date}}</small></p>
+            <p class="card-text"><small class="text-body-secondary">Last updated 3 mins ago</small></p>
             </div>
-            <ul class="list-group list-group-flush">
-              <li class="list-group-item">
-                {% for category in listing.categories.all %}
-                <a href="{% url 'categories' category.id  %}"> <span class="badge text-bg-primary">{{category}}</span>  </a>
-
-                {% endfor %}
-              </li>
-              
-              
-              
-            </ul>
             <div class="card-body">
               <a href="{% url 'listing' listing.id %}" class="card-link">Go to listing</a>
             </div>
@@ -34,6 +37,8 @@
         
         {% endfor %}
     </div>
+
+    {% endif %}
     
     
 {% endblock %}

@@ -1,0 +1,115 @@
+{% extends "auctions/layout.html" %}
+
+{% block body %}
+    <div class="d-flex flex-row flex-nowrap align-items-center gap-2">
+        <h1>Listing: {{listing.title}}</h1> 
+        
+        {% if listing.close %}
+        <span class="badge text-bg-danger">Close</span>
+
+        {% elif request.user.is_authenticated %}
+
+
+
+        {% if listing in request.user.watchlist_listings.all %}
+        <span class="badge text-bg-info">WatchList</span>
+        <form action="{% url 'remove_from_watchlist' listing.id %}">
+            <button type="submit" class="btn btn-danger">Remove from watchlist</button>
+        </form>
+        {% else %}
+        <form action="{% url 'add_to_watchlist' listing.id %}">
+            <button type="submit" class="btn btn-success">Add to watchlist</button>
+        </form>
+        {% endif %}
+
+
+
+
+        {% if request.user == listing.user %}
+        <form action="{% url 'close' listing.id %}">
+            <button type="submit" class="btn btn-info">Close</button>
+        </form>
+
+        {% endif %}
+
+
+        {% endif %}
+
+
+       
+        
+        
+
+    </div>
+
+    <img src="{{listing.image_url}}" alt="" class="img-fluid  rounded-start ">
+    <h3>Description</h3>
+    <p>{{listing.description}}</p>
+
+
+
+    <h3>Bids</h3>
+    <p>${{ listing.bids.first}}</p>
+    {% if request.user.is_authenticated %} 
+    {% if not listing.close %}
+    <form action="{% url 'newbid' listing.id  %}" method="POST">
+        {% csrf_token %}
+        <input type="number" name="price" id="amount_Price" min="{{listing.bids.first.price | add:1  }}" placeholder="{{listing.bids.first.price | add:1}}">        
+        <button class="btn btn-success" type="submit">Place Bid</button>
+    </form>
+    {% elif listing.bids.first.user == request.user %}
+    <div class="alert alert-success" role="alert">
+        <h4 class="alert-heading">You have won the listing</h4>
+       
+    </div>
+    {% endif %}
+
+    {% endif %}
+
+
+    
+
+    <h3>Details</h3>
+    <ul>
+        <li>
+            published by {{listing.user }}
+        </li>
+        <li>
+            categories
+            {% for category in listing.categories.all %}
+                <span class="badge rounded-pill text-bg-primary">{{category}}</span>
+                
+            {% endfor %}
+        </li>
+    </ul>
+
+    <h3>Comments</h3>
+    <ul class="list-group">
+
+        {% for comment in listing.comments.all %}
+        <li class="list-group-item d-flex flex-column p-2 text-wrap">
+            
+                <p class=" text-wrap"><strong>{{comment.user}}</strong></p>
+                <p class=" text-wrap">{{comment.content}}</p>
+          
+            
+            
+        </li>
+        
+        {% endfor %}
+        {% if not listing.close %} 
+        <form method="POST" action="{% url 'new_comment' listing.id %}" class="form-floating">
+            {% csrf_token %}
+            <textarea name="comment" id="commentInput"  class="form-control" placeholder="Leave a comment here" id="floatingTextarea2" style="height: 100px"></textarea>
+            <button class="btn btn-outline-secondary" type="submit" id="button-addon2">Post</button>
+            <label for="floatingTextarea2">Write your comment</label>
+        </form>
+        {% endif %}
+       
+
+        
+    </ul>
+
+
+
+{% endblock %}
