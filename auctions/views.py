@@ -135,7 +135,7 @@ def create(request):
 def index(request):
     
     return render(request, "auctions/index.html", {
-        "listings" : Listing.objects.all()
+        "listings" : Listing.objects.filter(close = False)
     })
 def categories(request, category_id = None):
     
